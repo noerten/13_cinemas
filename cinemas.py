@@ -30,7 +30,7 @@ def fetch_kinopoisk_film_page(film_title, proxy_list):
     proxy = {"http": random.choice(proxy_list)}
     return requests.get(KINOPOISK_SEARCH_URL, params=payload,
                         timeout=KINOPOISK_TIMEOUT, proxies=proxy).text
-    
+
 
 def parse_afisha_list(raw_html):
     soup = BeautifulSoup(raw_html, 'html.parser')
@@ -38,15 +38,17 @@ def parse_afisha_list(raw_html):
     for film_div in soup.find('div', id='schedule').find_all('div', class_=
                                                              'object',
                                                              recursive=False):
+        film_info = {}
         film_cinema_number = len(film_div.table.find_all('tr'))
         if film_cinema_number < MIN_NUMBER_OF_CINEMAS:
             continue
-        film_title = film_div.find('div', class_='m-disp-table').h3.string
-        film_description = film_div.find('div', class_='m-disp-table').p.string
-        film_link = film_div.find('div', class_='m-disp-table').a.get('href')
-        film_cinema_number = len(film_div.table.find_all('tr'))
-        film_info = [film_title, film_description, film_link,
-                     film_cinema_number]
+        film_info['title'] = film_div.find(
+            'div', class_='m-disp-table').h3.string
+        film_info['description'] = film_div.find(
+            'div', class_='m-disp-table').p.string
+        film_info['link'] = film_div.find(
+            'div', class_='m-disp-table').a.get('href')
+        film_info['cinema_number'] = len(film_div.table.find_all('tr'))
         all_films.append(film_info)
     return all_films
 
@@ -64,12 +66,12 @@ def output_film_to_console(film):
                        '{description}\n'
                        'number of cinemas: {number_of_cinemas}\n'
                        '{link}\n\n'.format(
-                          title=film[2],
-                          description=film[3],
-                          link=film[4],
-                          number_of_cinemas=film[5],
-                          rating=film[0],
-                          number_of_votes=film[1]
+                          title=film['title'],
+                          description=film['description'],
+                          link=film['link'],
+                          number_of_cinemas=film['cinema_number'],
+                          rating=film['rating'],
+                          number_of_votes=film['number_of_votes']
                           ))
     print(one_film_string)
 
@@ -79,10 +81,10 @@ if __name__ == '__main__':
     all_films = parse_afisha_list(afisha_html)
     proxy_list=get_proxy_list()
     for film in all_films:
-        kinopoisk_film_html = fetch_kinopoisk_film_page(film[0], proxy_list)
-        film_rating, film_number_of_votes = parse_kinopoisk_page(
+        kinopoisk_film_html = fetch_kinopoisk_film_page(film['title'],
+                                                        proxy_list)
+        film['rating'], film['number_of_votes'] = parse_kinopoisk_page(
             kinopoisk_film_html)
-        film.insert(0, film_rating)
-        film.insert(1, film_number_of_votes)
-    for film in sorted(all_films, reverse=True)[0:NUMBER_OF_FILMS_TO_SHOW]:
+    for film in sorted(all_films, key=lambda film: film['rating'],
+                       reverse=True)[0:NUMBER_OF_FILMS_TO_SHOW]:
         output_film_to_console(film)
