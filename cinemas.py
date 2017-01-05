@@ -32,7 +32,7 @@ def fetch_kinopoisk_film_page(film_title, proxy_list):
                         timeout=KINOPOISK_TIMEOUT, proxies=proxy).text
     
 
-def scrape_afisha_list(raw_html):
+def parse_afisha_list(raw_html):
     soup = BeautifulSoup(raw_html, 'html.parser')
     all_films = []
     for film_div in soup.find('div', id='schedule').find_all('div', class_=
@@ -51,7 +51,7 @@ def scrape_afisha_list(raw_html):
     return all_films
 
 
-def scrape_kinopoisk_page(raw_html):
+def parse_kinopoisk_page(raw_html):
     soup = BeautifulSoup(raw_html, 'html.parser')
     film_rating = soup.find('span', class_='rating_ball').string
     film_number_of_votes = soup.find('span', class_='ratingCount').string
@@ -76,11 +76,11 @@ def output_film_to_console(film):
 
 if __name__ == '__main__':
     afisha_html = fetch_afisha_page(AFISHA_CINEMA_SCHEDULE)
-    all_films = scrape_afisha_list(afisha_html)
+    all_films = parse_afisha_list(afisha_html)
     proxy_list=get_proxy_list()
     for film in all_films:
         kinopoisk_film_html = fetch_kinopoisk_film_page(film[0], proxy_list)
-        film_rating, film_number_of_votes = scrape_kinopoisk_page(
+        film_rating, film_number_of_votes = parse_kinopoisk_page(
             kinopoisk_film_html)
         film.insert(0, film_rating)
         film.insert(1, film_number_of_votes)
